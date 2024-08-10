@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/therahulbhati/go-redis-clone/internal/domain"
+	"github.com/therahulbhati/go-redis-clone/internal/rdb"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/therahulbhati/go-redis-clone/internal/handler"
@@ -16,10 +18,26 @@ import (
 func main() {
 	port := flag.String("port", "6379", "Port to run the Redis server on")
 	replicaof := flag.String("replicaof", "", "Replicate another Redis server")
+	rdbFileDir := flag.String("dir", "", "Directory to store RDB file")
+	rdbFileName := flag.String("dbfilename", "", "Name of the RDB file")
 
 	flag.Parse()
 
 	store := storage.NewInMemoryStore()
+	// Load RDB file if it exists
+	if *rdbFileDir != "" && *rdbFileName != "" {
+		rdbFilePath := filepath.Join(*rdbFileDir, *rdbFileName)
+		if _, err := os.Stat(rdbFilePath); err == nil {
+			err := rdb.LoadRDBFile(rdbFilePath, store)
+			if err != nil {
+				fmt.Printf("Error loading RDB file: %v", err)
+			} else {
+				fmt.Printf("Successfully loaded RDB file: %s", rdbFilePath)
+			}
+		} else {
+			fmt.Printf("RDB file does not exist at path: %s", rdbFilePath)
+		}
+	}
 
 	if *replicaof == "" {
 		fmt.Println("Starting as Leader")

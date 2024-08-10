@@ -9,6 +9,7 @@ A lightweight, Redis-like in-memory data structure store implemented in Go. This
 - Key expiration with millisecond precision
 - Leader-Follower replication
 - RESP (Redis Serialization Protocol) implementation
+- RDB Persistence: Save and load the database to and from an RDB file for data persistence
 
 ## Getting Started
 
@@ -51,6 +52,15 @@ To run as a follower of another Redis server:
 ./go-redis-clone -replicaof <leader-host> <leader-port>
 ```
 
+#### RDB Persistence
+
+To enable RDB persistence, specify the directory and filename for the RDB file:
+```bash
+./go-redis-clone -dir <directory> -dbfilename <filename>
+```
+The server will automatically load the database from the specified RDB file on startup and save the current state to the RDB file on shutdown.
+
+
 ## Supported Commands
 
 - `PING`: Test the connection
@@ -61,6 +71,10 @@ To run as a follower of another Redis server:
 - `REPLCONF`: Used in replication
 - `PSYNC`: Used in replication
 - `WAIT`: Wait for replication
+- `KEYS`: Retrieve all keys that match a given pattern (currently only supports the `*` pattern)
+- `CONFIG`: Retrieve server configuration settings (currently supports `CONFIG GET dir` and `CONFIG GET dbfilename`)
+- **RDB Persistence:**
+   - The server supports loading data from an RDB file and saving the current state to an RDB file.
 
 ## Architecture
 
@@ -72,6 +86,8 @@ The project is structured into several packages:
 - `replication`: Manages leader-follower replication
 - `domain`: Defines interfaces and common types
 - `resp`: Implements the RESP protocol
+- `rdb`: Manages RDB file persistence
+
 
 ## Contributing
 
