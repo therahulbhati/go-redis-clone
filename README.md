@@ -28,7 +28,7 @@ A lightweight, Redis-like in-memory data structure store implemented in Go. This
    ```
 3. Build the project:
    ```
-   go build
+   go build -o go-redis-clone cmd/server/main.go
    ```
 
 ### Usage
