@@ -15,24 +15,26 @@ import (
 )
 
 type Follower struct {
-	conn       net.Conn
-	port       string
-	store      domain.Store
-	reader     *bufio.Reader
-	replID     string
-	replOffset int64
-	leaderHost string
-	leaderPort string
-	mu         sync.Mutex
+	conn           net.Conn
+	port           string
+	store          domain.Store
+	reader         *bufio.Reader
+	replID         string
+	replOffset     int64
+	leaderHost     string
+	leaderPort     string
+	mu             sync.Mutex
+	commandHandler domain.CommandHandler
 }
 
 // NewFollower creates a new follower manager.
-func NewFollower(store domain.Store, port, leaderHost, leaderPort string) domain.FollowerManager {
+func NewFollower(store domain.Store, port, leaderHost, leaderPort string, commandHandler domain.CommandHandler) domain.FollowerManager {
 	return &Follower{
-		port:       port,
-		store:      store,
-		leaderHost: leaderHost,
-		leaderPort: leaderPort,
+		port:           port,
+		store:          store,
+		leaderHost:     leaderHost,
+		leaderPort:     leaderPort,
+		commandHandler: commandHandler,
 	}
 }
 
@@ -178,28 +180,14 @@ func (f *Follower) ProcessReplicationCommand(parts []string) {
 	debugLog("Follower processing command: %v", parts)
 
 	switch strings.ToUpper(parts[0]) {
-	case "SET":
-		if len(parts) >= 3 {
-			key, value := parts[1], parts[2]
-			expiration := time.Duration(-1)
 
-			if len(parts) == 5 && strings.ToUpper(parts[3]) == "PX" {
-				px, err := strconv.Atoi(parts[4])
-				if err != nil {
-					debugLog("Invalid PX value")
-					return
-				}
-				expiration = time.Duration(px) * time.Millisecond
-			}
-			f.store.Set(key, value, expiration)
-		}
-
-		debugLog("Follower executed SET command, new offset: %d", f.replOffset)
 	case "REPLCONF":
 		if len(parts) == 3 && strings.ToUpper(parts[1]) == "GETACK" {
 			debugLog("Follower received REPLCONF GETACK, current offset: %d", f.replOffset)
 			f.sendAck()
 		}
+	default:
+		f.commandHandler.ProcessCommand(parts, f.conn)
 	}
 	f.replOffset += int64(len(resp.EncodeRESPArray(parts)))
 }

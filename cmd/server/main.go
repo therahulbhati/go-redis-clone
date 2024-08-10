@@ -49,7 +49,9 @@ func main() {
 
 		leaderInfo := strings.Split(*replicaof, " ")
 		leaderHost, leaderPort := leaderInfo[0], leaderInfo[1]
-		followerManager := replication.NewFollower(store, *port, leaderHost, leaderPort)
+
+		commandHandler := handler.NewCommandHandler(store, nil)
+		followerManager := replication.NewFollower(store, *port, leaderHost, leaderPort, commandHandler)
 
 		if err := followerManager.ConnectToLeader(); err != nil {
 			fmt.Printf("Failed to connect to leader: %v\n", err)
@@ -57,7 +59,6 @@ func main() {
 
 		go followerManager.ReceiveAndProcessCommands()
 
-		commandHandler := handler.NewCommandHandler(store, nil)
 		startServer(*port, commandHandler)
 	}
 }
